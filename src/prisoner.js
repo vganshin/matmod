@@ -1,7 +1,7 @@
 var WebSocketClient = require('websocket').client;
 var fs = require('fs');
 
-var logFile = `logs/${new Date()}.txt`;
+var logFile = `logs/prisoner/${new Date()}.txt`;
 
 function log(msg) {
     // console.log(msg);
