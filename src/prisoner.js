@@ -1,18 +1,22 @@
-var WebSocketClient = require('websocket').client;
-var fs = require('fs');
+const WebSocketClient = require('websocket').client;
+const fs = require('fs');
 
-var logFile = `logs/prisoner/${new Date()}.txt`;
+const logFile = `logs/prisoner/1.txt`;
 
 function log(msg) {
     // console.log(msg);
     fs.appendFileSync(logFile, `${msg}\n`);
 }
 
-var login = '[MNR]';
-var password = 'lMHc1Sxpe4TaVBYGT9EyLg62j9gaRLis5KT13JqLMh6gByjlqf2fIdtHXfxJ7had';
-var debug = true;
+const login = '[MNR]';
+const password = 'lMHc1Sxpe4TaVBYGT9EyLg62j9gaRLis5KT13JqLMh6gByjlqf2fIdtHXfxJ7had';
+const debug = true;
 
-var connection;
+let connection;
+
+const client = new WebSocketClient();
+
+const games = {};
 
 function do_login() {
     send({state: 'login', login, debug, password});
@@ -27,25 +31,24 @@ function send(data) {
     connection.sendUTF(data2);
 }
 
-var client = new WebSocketClient();
-
-client.on('connectFailed', function(error) {
+client.on('connectFailed', error => {
     log('Connect Error: ' + error.toString());
 });
 
-const games = {};
-
-client.on('connect', function(conn) {
+client.on('connect', conn => {
     connection = conn;
 
     log('WebSocket Client Connected');
-    conn.on('error', function(error) {
+
+    conn.on('error', error => {
         log('Connection Error: ' + error.toString());
     });
-    conn.on('close', function() {
+
+    conn.on('close', () => {
         log('Connection Closed');
     });
-    conn.on('message', function(msg) {
+
+    conn.on('message', msg => {
         if (msg.type === 'utf8') {
             log("Received: '" + msg.utf8Data + "'");
         }
@@ -58,14 +61,18 @@ client.on('connect', function(conn) {
 
         if (message.state === 'start') {
             games[message.game] = message;
-            send({game:message.game,state:"move",strategy:1});
+            games[message.game].moves = [];
+            send({game: message.game, state: "move", strategy: 1});
         }
 
         if (message.state === 'turnover') {
+            addMove(message);
             const game = games[message.game];
             const opponents_move = message.moves[(game.hand + 1) % 2];
 
-            send({game:message.game,state:"move",strategy:opponents_move});
+            const isMirrorGamer = game.isMirrorGamer;
+
+            send({game: message.game, state: "move", strategy: isMirrorGamer ? 1 : opponents_move});
         }
 
         if (message.state === 'gameover') {
@@ -74,5 +81,26 @@ client.on('connect', function(conn) {
 
     });
 });
+
+function addMove(message) {
+    games[message.game].moves.push(message.moves);
+    const moves = games[message.game].moves;
+    const hand = games[message.game].hand;
+
+    if (moves.length < 7) {
+        return;
+    }
+
+    let isMirrorGamer = true;
+
+    for (let i = moves.length - 6; i < moves.length - 1; i++) {
+        if (moves[i][hand] !== moves[i + 1][(hand + 1) % 2]) {
+            isMirrorGamer = false;
+            break;
+        }
+    }
+
+    games[message.game].isMirrorGamer = isMirrorGamer;
+}
 
 client.connect('ws://dmc.alepoydes.com:3012');
