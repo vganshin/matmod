@@ -11,5 +11,6 @@ module.exports = {
     goods: {
       url: 'ws://dmc.alepoydes.com:3014'
     }
-  }
+  },
+  isLoggingOn: false
 }

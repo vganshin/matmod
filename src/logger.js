@@ -1,4 +1,5 @@
 const fs = require('fs');
+const constants = require('./constants');
 
 class Logger {
     constructor(fileName) {
@@ -14,7 +15,9 @@ class Logger {
         if (toConsole) {
             console.log(msg);
         }
-        fs.appendFileSync(this.logFile, `${msg}\n`);
+        if (constants.isLoggingOn) {
+            fs.appendFileSync(this.logFile, `${msg}\n`);
+        }
     }
 }
 
