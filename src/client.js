@@ -62,6 +62,11 @@ class Client {
                 return;
             }
 
+            if (data.state === 'access') {
+                console.log(`Loged as ${data.user}.`);
+                return;
+            }
+
             if (data.state === 'start') {
                 this.games[data.game] = data;
                 data.moves = [];
