@@ -1,4 +1,4 @@
-function isOponnentMirror(game) {
+function isOpponentMirror(game) {
   const moves = game.moves;
   const hand = game.hand;
 
@@ -15,7 +15,7 @@ function isOponnentMirror(game) {
   return true;
 }
 
-function isOponnentAntiMirror(game) {
+function isOpponentAntiMirror(game) {
   const moves = game.movesHistory;
   const hand = game.hand;
 
@@ -32,7 +32,22 @@ function isOponnentAntiMirror(game) {
   return true;
 }
 
+function opHand(game) {
+  return (game.hand + 1) % 2;
+}
+
+function myHand(game) {
+  return game.hand;
+}
+
+function lastOpponentsMove(game) {
+  return game.moves[game.moves.length - 1][opHand(game)];
+}
+
 module.exports = {
-  isOponnentMirror,
-  isOponnentAntiMirror
+  isOpponentMirror,
+  isOpponentAntiMirror,
+  opHand,
+  myHand,
+  lastOpponentsMove
 }
