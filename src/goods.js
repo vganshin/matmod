@@ -24,14 +24,14 @@ msgHandler = msg => {
         logger.log(`Game ${message.game} started. Hand: ${message.hand}. Income: ${JSON.stringify(message.parameters.income)}`, true);
         games[message.game] = message;
         games[message.game].moves = [];
-        client.send({game: message.game, state: "move", strategy: 0});
+        client.send({game: message.game, state: "move", strategy: 1});
     }
 
     if (message.state === 'turnover') {
         addMove(message);
         const game = games[message.game];
 
-        client.send({game: message.game, state: "move", strategy: 0});
+        client.send({game: message.game, state: "move", strategy: game.ones > 2 ? 0 : 1});
     }
 
     if (message.state === 'gameover') {
@@ -41,6 +41,10 @@ msgHandler = msg => {
     function addMove(message) {
         games[message.game].moves.push(message.moves);
         const moves = games[message.game].moves;
+
+        const lastMoves = message.moves;
+        const ones = lastMoves.reduce((accumulator, currentValue) => accumulator + currentValue);
+        games[message.game].ones = ones;
     }
 };
 

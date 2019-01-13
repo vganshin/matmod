@@ -1,90 +1,117 @@
-var WebSocketClient = require('websocket').client;
-var fs = require('fs');
+const ClientClass = require('./client').Client;
 
-var logFile = `logs/chicken/${new Date()}.txt`;
+const LoggerUtil = require('./logger').Logger;
+const logger = new LoggerUtil(`logs/chicken/1.txt`);
 
-function log(msg) {
-    // console.log(msg);
-    fs.appendFileSync(logFile, `${msg}\n`);
-}
-
-function hit_probability(probability) {
-    return Math.random() < probability;
-}
-
-var login = '[MNR]';
-var password = 'lMHc1Sxpe4TaVBYGT9EyLg62j9gaRLis5KT13JqLMh6gByjlqf2fIdtHXfxJ7had';
-var debug = true;
-
-var connection;
-
-function do_login() {
-    send({state: 'login', login, debug, password});
-}
-
-function send(data) {
-    if (connection === undefined) {
-        log('Connection is undefined');
-    }
-    const data2 = JSON.stringify(data);
-    log('Sending: ' + data2);
-    connection.sendUTF(data2);
-}
-
-var client = new WebSocketClient();
-
-client.on('connectFailed', function(error) {
-    log('Connect Error: ' + error.toString());
-});
+const login = '[MNR]';
+const password = 'lMHc1Sxpe4TaVBYGT9EyLg62j9gaRLis5KT13JqLMh6gByjlqf2fIdtHXfxJ7had';
+const debug = true;
 
 const games = {};
+
+let winGamesCount = 0;
+let loseGamesCount = 0;
+
+let points = 0;
+let opponentPoints = 0;
 
 function nash_balance_stategry(game) {
     return game.parameters.payoff[1][0][1] / game.parameters.payoff[1][1][1];
 }
 
-client.on('connect', function(conn) {
-    connection = conn;
+const msgHandler = msg => {
+    if (msg.type === 'utf8') {
+        logger.log("Received: '" + msg.utf8Data + "'");
+    }
 
-    log('WebSocket Client Connected');
-    conn.on('error', function(error) {
-        log('Connection Error: ' + error.toString());
-    });
-    conn.on('close', function() {
-        log('Connection Closed');
-    });
-    conn.on('message', function(msg) {
-        if (msg.type === 'utf8') {
-            log("Received: '" + msg.utf8Data + "'");
+    const message = JSON.parse(msg.utf8Data);
+
+    if (message.state === 'info') {
+        client.loginToServer();
+    }
+
+    if (message.state === 'start') {
+        // logger.log(`Game ${message.game} started. Hand: ${message.hand}. Payoff: ${JSON.stringify(message.parameters.payoff)}`, true);
+        games[message.game] = message;
+        games[message.game].movesHistory = [];
+        client.send({game: message.game, state: "move", strategy: 0});
+    }
+
+    if (message.state === 'turnover') {
+        // addMove(message);
+        // const game = games[message.game];
+        // const opponentsPreviousMove = message.moves[(game.hand + 1) % 2];
+        // const mirrorAroundMove = opponentsPreviousMove === 1 ? 0 : 1;
+        //
+        // client.send({game: message.game, state: "move", strategy: game.isMirrorAroundGamer ? 1 : mirrorAroundMove});
+        // ------
+        addMove(message);
+        const game2 = games[message.game];
+
+        if (game2.isMirrorAroundGamer) {
+            return client.send({game: message.game, state: "move", strategy: 1});
+        }
+// --------
+        const game = games[message.game];
+        const balance = nash_balance_stategry(game);
+
+        if (message.moves[(game.hand + 1) % 2] === 1) {
+            game.moves = 1;
         }
 
-        const message = JSON.parse(msg.utf8Data);
-
-        if (message.state === 'info') {
-            do_login();
+        if (game.moves * (balance - balance**2) < 0.8) {
+            game.moves++;
+            return client.send({game:message.game, state:'move', strategy: 1});
         }
 
-        if (message.state === 'start') {
-            games[message.game] = message;
-            const balance = nash_balance_stategry(games[message.game]);
-            const strategy = hit_probability(balance) ? 1 : 0;
+        return client.send({game:message.game, state:'move', strategy: 0});
+    }
 
-            send({game:message.game, state:'move', strategy});
+    if (message.state === 'gameover') {
+        const game = games[message.game];
+
+        const iWon = message.scores[game.hand] > message.scores[(game.hand + 1) % 2];
+        const difference = Math.abs(message.scores[game.hand] - message.scores[(game.hand + 1) % 2]);
+
+        logger.log(`Game ${message.game} is over.
+Hand: ${games[message.game].hand}. 
+Winner: ${iWon}.
+Difference: ${difference}.
+Scores: ${JSON.stringify(message.scores)}
+`, true);
+
+        if (iWon) {
+            winGamesCount++;
+        } else {
+            loseGamesCount++;
         }
 
-        if (message.state === 'turnover') {
-            const game = games[message.game];
-            const balance = nash_balance_stategry(game);
-            const strategy = hit_probability(balance) ? 1 : 0;
+        points += message.scores[game.hand];
 
-            send({game:message.game, state:'move', strategy});
+        console.log(`WinCount: ${winGamesCount}. LoseCount: ${loseGamesCount}. Avg Score: ${points/(winGamesCount + loseGamesCount)}\n`)
+    }
+
+    function addMove(message) {
+        games[message.game].movesHistory.push(message.moves);
+        const moves = games[message.game].movesHistory;
+        const hand = games[message.game].hand;
+
+        if (moves.length < 7) {
+            return;
         }
 
-        if (message.state === 'gameover') {
-            console.log(message.game + ' is over');
+        let isMirrorAroundGamer = true;
+
+        for (let i = moves.length - 6; i < moves.length - 1; i++) {
+            if (moves[i][hand] === moves[i + 1][(hand + 1) % 2]) {
+                isMirrorAroundGamer = false;
+                break;
+            }
         }
 
-    });
-});
+        games[message.game].isMirrorAroundGamer = isMirrorAroundGamer;
+    }
+};
 
-client.connect('ws://dmc.alepoydes.com:3013');
+const client = new ClientClass(login, password, debug, 'ws://dmc.alepoydes.com:3013', msgHandler, logger);
+client.connect();
