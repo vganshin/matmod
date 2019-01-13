@@ -103,6 +103,11 @@
   addEventListener('keydown', e => {
     e.preventDefault();
 
+    if (e.key === 'ArrowUp') {
+      reload();
+      return;
+    }
+
     if (e.key === 'ArrowRight') {
       const index = context.game_ids.indexOf(context.game_id);
       if (index >= context.game_ids.length - 1) {
