@@ -16,7 +16,7 @@ function isOpponentMirror(game) {
 }
 
 function isOpponentAntiMirror(game) {
-  const moves = game.movesHistory;
+  const moves = game.moves;
   const hand = game.hand;
 
   if (moves.length < 7) {
@@ -51,11 +51,16 @@ function lastOpponentsMove(game) {
   return game.moves[game.moves.length - 1][opHand(game)];
 }
 
+function nash_balance_stategy(game) {
+    return game.parameters.payoff[1][0][1] / game.parameters.payoff[1][1][1];
+}
+
 module.exports = {
   isOpponentMirror,
   isOpponentAntiMirror,
   opHand,
   myHand,
   lastOpponentsMove,
-  moveCount
+  moveCount,
+  nash_balance_stategy
 }
