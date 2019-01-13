@@ -104,5 +104,6 @@ client.on('connect', function(conn) {
 
 module.exports.createImpl = createImpl;
 module.exports.hit_probability = hit_probability;
+module.exports.nash_balance_stategry = nash_balance_stategry;
 
 // client.connect('ws://dmc.alepoydes.com:3013');
