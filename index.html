@@ -18,10 +18,9 @@
   </style>
 </head>
 <body>
-<!-- <div id="product_rating_by_card_type"></div> -->
 <div id="plot"></div>
 <button onclick="reload();">Reload</button>
-<a href="" onclick="">Chicken</a>
+<a>Chicken</a>
 <div id="games"></div>
 <script>
   function score_by_hand(game, hand, name) {
@@ -55,7 +54,9 @@
     return score_by_hand(game, (game.hand + 1) % 2, 'enemy');
   }
 
-  var wow;
+  var context = {
+    game_ids: []
+  }
 
   function reload() {
     console.log('Reloading...');
@@ -63,7 +64,7 @@
     const mainDiv = document.getElementById('games');
     mainDiv.textContent = '';
 
-    list_games()
+    return list_games()
       .then(data => {
         const links = data.map(d => {
           const a = document.createElement('a');
@@ -78,44 +79,57 @@
         })
       });
   }
-  reload();
 
   function show_game(game_id) {
     console.log('Showing game ' + game_id);
+    context.game_id = game_id;
     fetch(`/api/games/chicken/${game_id}.json`)
       .then(res => res.json())
       .then(data => {
         console.log(data);
         Plotly.newPlot('plot', [my_score(data), op_score(data)], {title: `Игра №${game_id}`})
-      })
+      });
   }
 
   function list_games() {
     return fetch('/api/games/chicken')
       .then(res => res.json())
       .then(data => {
-        console.log(data);
+        context.game_ids = data;
         return data;
       });
   }
 
-  // fetch()
+  addEventListener('keydown', e => {
+    e.preventDefault();
 
+    if (e.key === 'ArrowRight') {
+      const index = context.game_ids.indexOf(context.game_id);
+      if (index >= context.game_ids.length - 1) {
+        return;
+      }
+      show_game(context.game_ids[index + 1])
+      return;
+    }
 
-// fetch('data.txt')
-//   .then(resp => resp.text())
-//   .then(raw => raw
-//     .slice(0, -1)
-//     .split('\n')
-//     .map(d => d.split('|'))
-//     .forEach(d => {
-//       data[d[0]] = data[d[0]] === undefined ? {x: [], y: []} : data[d[0]];
-//       data[d[0]].x.push(d[2]);
-//       data[d[0]].y.push(d[1]);
-//       data[d[0]].name = d[0]
-//     }))
-//   .then(() => Plotly.newPlot('plot', Object.values(data), {title: 'Игра №7'}));
+    if (e.key === 'ArrowLeft') {
+      const index = context.game_ids.indexOf(context.game_id);
+      if (index <= 0) {
+        return;
+      }
+      show_game(context.game_ids[index - 1])
+      return;
+    }
+  });
 
+  window.onload = () => {
+    reload()
+      .then(() => {
+        if (context.game_ids.length !== 0) {
+          show_game(context.game_ids[0]);
+        }
+      })
+  };
 </script>
 </body>
 </html>
