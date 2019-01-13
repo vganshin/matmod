@@ -41,6 +41,9 @@ function myHand(game) {
 }
 
 function lastOpponentsMove(game) {
+  if (game.moves.length === 0) {
+    return undefined;
+  }
   return game.moves[game.moves.length - 1][opHand(game)];
 }
 

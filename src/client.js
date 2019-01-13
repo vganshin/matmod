@@ -76,6 +76,7 @@ class Client {
 
             if (data.state === 'turnover') {
                 this.games[data.game].moves.push(data.moves);
+                this.saveGame(data.game);
                 const strategy = this.strategyFn(this.games[data.game]);
                 this.send({
                     game: data.game,
