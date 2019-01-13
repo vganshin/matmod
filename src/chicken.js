@@ -1,120 +1,117 @@
-var WebSocketClient = require('websocket').client;
-var fs = require('fs');
+const ClientClass = require('./client').Client;
 
-var logFile = `logs/chicken/${new Date()}.txt`;
+const LoggerUtil = require('./logger').Logger;
+const logger = new LoggerUtil(`logs/chicken/1.txt`);
 
-function log(msg) {
-    // console.log(msg);
-    fs.appendFileSync(logFile, `${msg}\n`);
-}
-
-function hit_probability(probability) {
-    return Math.random() < probability;
-}
-
-var login = '[MNR]';
-var password = 'lMHc1Sxpe4TaVBYGT9EyLg62j9gaRLis5KT13JqLMh6gByjlqf2fIdtHXfxJ7had';
-var debug = true;
-
-var connection;
-
-function do_login() {
-    send({state: 'login', login, debug, password});
-}
-
-function save_game(game_id) {
-    const game = games[game_id];
-
-    if (game === undefined) {
-        throw new Error(`Game with id = ${game_id} not found.`);
-    }
-
-    fs.writeFileSync(`games/chicken/${game_id}.json`, JSON.stringify(game, 2, 2));
-}
-
-function send(data) {
-    if (connection === undefined) {
-        log('Connection is undefined');
-    }
-    const data2 = JSON.stringify(data);
-    log('Sending: ' + data2);
-    connection.sendUTF(data2);
-}
-
-var client = new WebSocketClient();
-
-client.on('connectFailed', function(error) {
-    log('Connect Error: ' + error.toString());
-});
+const login = '[MNR]';
+const password = 'lMHc1Sxpe4TaVBYGT9EyLg62j9gaRLis5KT13JqLMh6gByjlqf2fIdtHXfxJ7had';
+const debug = true;
 
 const games = {};
+
+let winGamesCount = 0;
+let loseGamesCount = 0;
+
+let points = 0;
+let opponentPoints = 0;
 
 function nash_balance_stategry(game) {
     return game.parameters.payoff[1][0][1] / game.parameters.payoff[1][1][1];
 }
 
-function run_game(game_id) {
-    const game = games[game_id];
-
-    if (game === undefined) {
-        throw new Error(`Game with id = ${game_id} not found.`);
+const msgHandler = msg => {
+    if (msg.type === 'utf8') {
+        logger.log("Received: '" + msg.utf8Data + "'");
     }
 
-    game.state = 'in_progress';
-    const balance = nash_balance_stategry(game);
-    const strategy = hit_probability(balance) ? 1 : 0;
+    const message = JSON.parse(msg.utf8Data);
 
-    send({game:game_id, state:'move', strategy});
-}
+    if (message.state === 'info') {
+        client.loginToServer();
+    }
 
-client.on('connect', function(conn) {
-    connection = conn;
+    if (message.state === 'start') {
+        // logger.log(`Game ${message.game} started. Hand: ${message.hand}. Payoff: ${JSON.stringify(message.parameters.payoff)}`, true);
+        games[message.game] = message;
+        games[message.game].movesHistory = [];
+        client.send({game: message.game, state: "move", strategy: 0});
+    }
 
-    log('WebSocket Client Connected');
-    conn.on('error', function(error) {
-        log('Connection Error: ' + error.toString());
-    });
-    conn.on('close', function() {
-        log('Connection Closed');
-    });
-    conn.on('message', function(msg) {
-        if (msg.type === 'utf8') {
-            log("Received: '" + msg.utf8Data + "'");
+    if (message.state === 'turnover') {
+        // addMove(message);
+        // const game = games[message.game];
+        // const opponentsPreviousMove = message.moves[(game.hand + 1) % 2];
+        // const mirrorAroundMove = opponentsPreviousMove === 1 ? 0 : 1;
+        //
+        // client.send({game: message.game, state: "move", strategy: game.isMirrorAroundGamer ? 1 : mirrorAroundMove});
+        // ------
+        addMove(message);
+        const game2 = games[message.game];
+
+        if (game2.isMirrorAroundGamer) {
+            return client.send({game: message.game, state: "move", strategy: 1});
+        }
+// --------
+        const game = games[message.game];
+        const balance = nash_balance_stategry(game);
+
+        if (message.moves[(game.hand + 1) % 2] === 1) {
+            game.moves = 1;
+        }
+
+        if (game.moves * (balance - balance**2) < 0.8) {
+            game.moves++;
+            return client.send({game:message.game, state:'move', strategy: 1});
+        }
+
+        return client.send({game:message.game, state:'move', strategy: 0});
+    }
+
+    if (message.state === 'gameover') {
+        const game = games[message.game];
+
+        const iWon = message.scores[game.hand] > message.scores[(game.hand + 1) % 2];
+        const difference = Math.abs(message.scores[game.hand] - message.scores[(game.hand + 1) % 2]);
+
+        logger.log(`Game ${message.game} is over.
+Hand: ${games[message.game].hand}.
+Winner: ${iWon}.
+Difference: ${difference}.
+Scores: ${JSON.stringify(message.scores)}
+`, true);
+
+        if (iWon) {
+            winGamesCount++;
         } else {
-            throw new Error('Unexpected message type ' + msg.type);
+            loseGamesCount++;
         }
 
-        const message = JSON.parse(msg.utf8Data);
+        points += message.scores[game.hand];
 
-        if (message.state === 'info') {
-            do_login();
+        console.log(`WinCount: ${winGamesCount}. LoseCount: ${loseGamesCount}. Avg Score: ${points/(winGamesCount + loseGamesCount)}\n`)
+    }
+
+    function addMove(message) {
+        games[message.game].movesHistory.push(message.moves);
+        const moves = games[message.game].movesHistory;
+        const hand = games[message.game].hand;
+
+        if (moves.length < 7) {
+            return;
         }
 
-        if (message.state === 'start') {
-            message.moves = [];
-            games[message.game] = message;
-            run_game(message.game);
+        let isMirrorAroundGamer = true;
+
+        for (let i = moves.length - 6; i < moves.length - 1; i++) {
+            if (moves[i][hand] === moves[i + 1][(hand + 1) % 2]) {
+                isMirrorAroundGamer = false;
+                break;
+            }
         }
 
-        if (message.state === 'turnover') {
-            const game = games[message.game];
-            game.moves.push(message.moves);
-            const balance = nash_balance_stategry(game);
-            const strategy = hit_probability(balance) ? 1 : 0;
+        games[message.game].isMirrorAroundGamer = isMirrorAroundGamer;
+    }
+};
 
-            send({game:message.game, state:'move', strategy: 1});
-        }
-
-        if (message.state === 'gameover') {
-            const game = games[message.game];
-            game.state = 'gameover';
-            game.scores = message.scores;
-            save_game(message.game);
-            delete games[message.game];
-            console.log(message.game + ' is over');
-        }
-
-    });
-});
-
-client.connect('ws://dmc.alepoydes.com:3013');
+const client = new ClientClass(login, password, debug, 'ws://dmc.alepoydes.com:3013', msgHandler, logger);
+client.connect();
