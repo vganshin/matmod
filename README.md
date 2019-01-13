@@ -4,11 +4,11 @@
 node src/index.js gameName [release]
 ```
 
-Allowed game names: prisoner, chicken, goods.
+Allowed game names: `prisoner`, `chicken`, `goods`.
 
 # How to run visualizer
 
-Run commend
+Run command
 ```
 node src/server.js
 ```
