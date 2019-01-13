@@ -10,10 +10,12 @@
 
     #games a {
       float: left;
+      margin-left: 0.5em;
+      color: gray;
     }
 
-    #games a {
-      margin-left: 0.5em;
+    #game .new-game {
+      background-color: #66ff73;
     }
   </style>
 </head>
@@ -69,6 +71,7 @@
         const links = data.map(d => {
           const a = document.createElement('a');
           a.href = '#';
+          a.id = 'game_' + d;
           a.onclick = () => show_game(d);
           a.text = d;
           return a;
@@ -80,9 +83,24 @@
       });
   }
 
+  function bold(id) {
+    element = document.getElementById('game_' + id);
+    element.style = 'font-weight: bold; color: blue';
+  }
+
+  function unbold(id) {
+    if (id === undefined) {
+      return;
+    }
+    element = document.getElementById('game_' + id);
+    element.style = 'font-weight: none';
+  }
+
   function show_game(game_id) {
     console.log('Showing game ' + game_id);
+    unbold(context.game_id);
     context.game_id = game_id;
+    bold(context.game_id);
     fetch(`/api/games/chicken/${game_id}.json`)
       .then(res => res.json())
       .then(data => {
@@ -101,8 +119,6 @@
   }
 
   addEventListener('keydown', e => {
-    e.preventDefault();
-
     if (e.key === 'ArrowUp') {
       reload();
       return;
