@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Визуализация</title>
+  <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+
+  <style type="text/css">
+
+    #games a {
+      float: left;
+    }
+
+    #games a {
+      margin-left: 0.5em;
+    }
+  </style>
+</head>
+<body>
+<!-- <div id="product_rating_by_card_type"></div> -->
+<div id="plot"></div>
+<button onclick="reload();">Reload</button>
+<div id="games">
+  <a href="#" onclick="show_game(29311);">29311</a>
+</div>
+<script>
+  function score_by_hand(game, hand, name) {
+    const y = game
+      .moves
+      .map(moves => game.parameters.payoff[moves[0]][moves[1]])
+      .map(scores => scores[hand])
+      .reduce((acc, n) => {
+        if (acc.length === 0) {
+          return [n];
+        } else {
+          acc.push(acc[acc.length - 1] + n);
+          return acc;
+        }
+      }, [])
+      .map((n, i) => n / (i + 1));
+
+    const text = game.moves.map(moves => moves[hand]);
+
+    y.push(game.scores[hand]);
+    text.push('?');
+
+    return {name, y, text};
+  }
+
+  function my_score(game) {
+    return score_by_hand(game, game.hand, 'me');
+  }
+
+  function op_score(game) {
+    return score_by_hand(game, (game.hand + 1) % 2, 'enemy');
+  }
+
+  var wow;
+
+  function reload() {
+    console.log('Reloading...');
+
+    const mainDiv = document.getElementById('games');
+    mainDiv.textContent = '';
+
+    list_games()
+      .then(data => {
+        const links = data.map(d => {
+          const a = document.createElement('a');
+          a.href = '#';
+          a.onclick = () => show_game(d);
+          a.text = d;
+          return a;
+        });
+
+        links.forEach(link => {
+          mainDiv.appendChild(link);
+        })
+      });
+  }
+  reload();
+
+  function show_game(game_id) {
+    console.log('Showing game ' + game_id);
+    fetch(`/api/games/chicken/${game_id}.json`)
+      .then(res => res.json())
+      .then(data => {
+        console.log(data);
+        Plotly.newPlot('plot', [my_score(data), op_score(data)], {title: `Игра №${game_id}`})
+      })
+  }
+
+  function list_games() {
+    return fetch('/api/games/chicken')
+      .then(res => res.json())
+      .then(data => {
+        console.log(data);
+        return data;
+      });
+  }
+
+  // fetch()
+
+
+// fetch('data.txt')
+//   .then(resp => resp.text())
+//   .then(raw => raw
+//     .slice(0, -1)
+//     .split('\n')
+//     .map(d => d.split('|'))
+//     .forEach(d => {
+//       data[d[0]] = data[d[0]] === undefined ? {x: [], y: []} : data[d[0]];
+//       data[d[0]].x.push(d[2]);
+//       data[d[0]].y.push(d[1]);
+//       data[d[0]].name = d[0]
+//     }))
+//   .then(() => Plotly.newPlot('plot', Object.values(data), {title: 'Игра №7'}));
+
+</script>
+</body>
+</html>

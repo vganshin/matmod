@@ -22,6 +22,16 @@ function do_login() {
     send({state: 'login', login, debug, password});
 }
 
+function save_game(game_id) {
+    const game = games[game_id];
+
+    if (game === undefined) {
+        throw new Error(`Game with id = ${game_id} not found.`);
+    }
+
+    fs.writeFileSync(`games/chicken/${game_id}.json`, JSON.stringify(game, 2, 2));
+}
+
 function send(data) {
     if (connection === undefined) {
         log('Connection is undefined');
@@ -43,6 +53,20 @@ function nash_balance_stategry(game) {
     return game.parameters.payoff[1][0][1] / game.parameters.payoff[1][1][1];
 }
 
+function run_game(game_id) {
+    const game = games[game_id];
+
+    if (game === undefined) {
+        throw new Error(`Game with id = ${game_id} not found.`);
+    }
+
+    game.state = 'in_progress';
+    const balance = nash_balance_stategry(game);
+    const strategy = hit_probability(balance) ? 1 : 0;
+
+    send({game:game_id, state:'move', strategy});
+}
+
 client.on('connect', function(conn) {
     connection = conn;
 
@@ -56,6 +80,8 @@ client.on('connect', function(conn) {
     conn.on('message', function(msg) {
         if (msg.type === 'utf8') {
             log("Received: '" + msg.utf8Data + "'");
+        } else {
+            throw new Error('Unexpected message type ' + msg.type);
         }
 
         const message = JSON.parse(msg.utf8Data);
@@ -65,22 +91,26 @@ client.on('connect', function(conn) {
         }
 
         if (message.state === 'start') {
+            message.moves = [];
             games[message.game] = message;
-            const balance = nash_balance_stategry(games[message.game]);
-            const strategy = hit_probability(balance) ? 1 : 0;
-
-            send({game:message.game, state:'move', strategy});
+            run_game(message.game);
         }
 
         if (message.state === 'turnover') {
             const game = games[message.game];
+            game.moves.push(message.moves);
             const balance = nash_balance_stategry(game);
             const strategy = hit_probability(balance) ? 1 : 0;
 
-            send({game:message.game, state:'move', strategy});
+            send({game:message.game, state:'move', strategy: 1});
         }
 
         if (message.state === 'gameover') {
+            const game = games[message.game];
+            game.state = 'gameover';
+            game.scores = message.scores;
+            save_game(message.game);
+            delete games[message.game];
             console.log(message.game + ' is over');
         }
 

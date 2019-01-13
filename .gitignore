@@ -1,3 +1,5 @@
 node_modules
 logs/prisoner/*.txt
 logs/chicken/*.txt
+games/prisoner/*.json
+games/chicken/*.json
