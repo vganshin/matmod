@@ -7,5 +7,5 @@ then
 else
   echo "Rating updated."
   cp current.html last.html
-  cp last.html "`date`.html"
+  cp last.html "`date +%Y/%m/%d-%H:%M.html`"
 fi
