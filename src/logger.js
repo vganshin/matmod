@@ -4,6 +4,7 @@ class Logger {
     constructor(fileName) {
         if (!fileName) {
             console.log("FileName is not defined. Use default name 'log.txt' and current directory");
+            this.logFile = 'log.txt';
         } else {
             this.logFile = fileName;
         }
