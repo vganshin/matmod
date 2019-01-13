@@ -2,6 +2,7 @@ const WebSocketClient = require('websocket').client;
 const constants = require('./constants');
 const LoggerUtil = require('./logger').Logger;
 const fs = require('fs');
+const helpers = require('./helpers');
 
 class Client {
     // constructor(login, password, debug, url, strategyFn, logger) {
@@ -71,18 +72,7 @@ class Client {
 
             if (data.state === 'start') {
 
-                const screen = () => {
-                    console.clear();
-                    console.log(`${this.login} plays ${this.gameName}. ${new Date()}\n`);
-
-                    console.log(`ID\tMOVES\tTERM%`);
-                    const game_ids = Object.keys(this.games).sort();
-                    game_ids.forEach(game_id => {
-                        const game = this.games[game_id];
-                        console.log(`${game_id}\t${game.moves.length}\t${game.parameters.termination_probability}`);
-                    });
-                };
-                setInterval(screen, 1000);
+                this.screen();
 
 
                 this.games[data.game] = data;
@@ -136,6 +126,40 @@ class Client {
         }
 
         fs.writeFileSync(`games/${this.gameName}/${gameId}.json`, JSON.stringify(game, 2, 2));
+    }
+
+    screen() {
+        if (this.interval !== undefined) {
+            return;
+        }
+
+        const screen = () => {
+            console.clear();
+            console.log(`${this.login} plays ${this.gameName}. ${new Date()}\n`);
+
+            console.log(`ID\tMOVES\tTERM%\t\t\tMY_SCORE\t\tOP_SCORE\t\tA\t\t\tB\t\t\tB/A`);
+            const game_ids = Object.keys(this.games).sort();
+            game_ids.forEach(game_id => {
+                const game = this.games[game_id];
+
+                const myHand = helpers.myHand(game);
+                const myScore = game.moves
+                  .map(moves => game.parameters.payoff[moves[0]][moves[1]])
+                  .map(scores => scores[myHand])
+                  .reduce((acc, score) => acc + score, 0) / game.moves.length;
+
+                const opHand = helpers.opHand(game);
+                const opScore = game.moves
+                  .map(moves => game.parameters.payoff[moves[0]][moves[1]])
+                  .map(scores => scores[opHand])
+                  .reduce((acc, score) => acc + score, 0) / game.moves.length;
+
+                const a = Math.abs(game.parameters.payoff[1][0][1]);
+                const b = Math.abs(game.parameters.payoff[1][1][1]);
+                console.log(`${game_id}\t${game.moves.length}\t${game.parameters.termination_probability}\t${myScore}\t${opScore}\t${a}\t${b}\t${b / a}`);
+            });
+        };
+        this.interval = setInterval(screen, 1000);
     }
 }
 
