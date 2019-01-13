@@ -67,8 +67,24 @@ class Client {
                 return;
             }
 
+
+
             if (data.state === 'start') {
-                console.log(`Started game ${data.game}. Term prob: ${data.parameters.termination_probability}`);
+
+                const screen = () => {
+                    console.clear();
+                    console.log(`${this.login} plays ${this.gameName}. ${new Date()}\n`);
+
+                    console.log(`ID\tMOVES\tTERM%`);
+                    const game_ids = Object.keys(this.games).sort();
+                    game_ids.forEach(game_id => {
+                        const game = this.games[game_id];
+                        console.log(`${game_id}\t${game.moves.length}\t${game.parameters.termination_probability}`);
+                    });
+                };
+                setInterval(screen, 1000);
+
+
                 this.games[data.game] = data;
                 data.moves = [];
 
@@ -91,7 +107,6 @@ class Client {
             }
 
             if (data.state === 'gameover') {
-                console.log(`End game ${data.game}. Count turns: ${this.games[data.game].moves.length + 1}`);
                 this.games[data.game].scores = data.scores;
                 this.saveGame(data.game);
                 delete this.games[data.game];

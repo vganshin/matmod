@@ -15,4 +15,6 @@ if (gameName === 'prisoner') {
 } else if (gameName === 'goods') {
   const client = new Client(gameName, goodsStrategy, debug);
   client.connect();
+} else {
+  console.log('Unknown game ' + gameName);
 }
