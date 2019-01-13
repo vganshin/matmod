@@ -1,11 +1,13 @@
 const helpers = require('../helpers');
 
 function rootStrategy(game) {
+  // init actions
   if (helpers.moveCount(game) === 1) {
       game.agressiveMoves = 1;
       return 0;
   }
 
+  // CATCH LOVER
   if (helpers.moveCount(game) === 4) {
     let ones = 0;
 
@@ -28,10 +30,14 @@ function rootStrategy(game) {
   if (game.isLover) {
     return 1;
   }
+  // END CATCH LOVER
 
+  // CATCH ANTI-MIRROR GAMER
   if (helpers.isOpponentAntiMirror(game)) {
     return 1;
   }
+
+  // -- workarounds end here
 
   const balance = helpers.nash_balance_stategy(game);
 
