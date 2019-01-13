@@ -1,15 +1,25 @@
 const WebSocketClient = require('websocket').client;
+const constants = require('./constants');
+const LoggerUtil = require('./logger').Logger;
 
 class Client {
-    constructor(login, password, debug, url, strategyFn, logger) {
-        this.games = {};
-        this.login = login;
-        this.password = password;
-        this.debug = debug;
-        this.url = url;
-        this.runStrategy = strategyFn;
+    // constructor(login, password, debug, url, strategyFn, logger) {
+    constructor(gameName, strategyFn, debug = true) {
+        const gameInfo = constants.games[gameName];
 
-        this.logger = logger;
+        if (gameInfo === undefined) {
+            throw new Error(`Unknown game '${gameName}'.`);
+        }
+
+        this.games = {};
+        this.login = constants.login;
+        this.password = constants.password;
+        this.debug = debug;
+        this.gameName = gameName;
+        this.url = gameInfo.url;
+        this.strategyFn = strategyFn;
+
+        this.logger = new LoggerUtil(`logs/${gameName}/${new Date()}.txt`);;
 
         this.client = new WebSocketClient();
 
@@ -40,7 +50,7 @@ class Client {
 
         this.connection.on('message', message => {
             if (message.type === 'utf8') {
-                logger.log("Received: '" + message.utf8Data + "'");
+                this.logger.log("Received: '" + message.utf8Data + "'");
             } else {
                 throw new Error(`Unsupported message type ${message.type}`)
             }
@@ -55,7 +65,7 @@ class Client {
                 this.games[data.game] = data;
                 data.moves = [];
 
-                const strategy = this.runStrategy(this.games[data.game]);
+                const strategy = this.strategyFn(this.games[data.game]);
                 this.send({
                     game: data.game,
                     state:'move',
@@ -65,7 +75,7 @@ class Client {
 
             if (data.state === 'turnover') {
                 this.games[data.game].moves.push(data.moves);
-                const strategy = this.runStrategy(this.games[data.game]);
+                const strategy = this.strategyFn(this.games[data.game]);
                 this.send({
                     game: data.game,
                     state:'move',
@@ -74,7 +84,9 @@ class Client {
             }
 
             if (data.state === 'gameover') {
-                this.saveGame(games[data.game]);
+                this.games[data.game].scores = data.scores;
+                this.saveGame(data.game);
+                delete this.games[data.game];
             }
         });
     }
