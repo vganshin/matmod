@@ -51,6 +51,10 @@ function lastOpponentsMove(game) {
   return game.moves[game.moves.length - 1][opHand(game)];
 }
 
+function lastNOpponentsMoves(game, n) {
+  return game.moves.slice(-n).map(m => m[opHand(game)]);
+}
+
 function nash_balance_stategy(game) {
     return game.parameters.payoff[1][0][1] / game.parameters.payoff[1][1][1];
 }
@@ -62,5 +66,6 @@ module.exports = {
   myHand,
   lastOpponentsMove,
   moveCount,
-  nash_balance_stategy
+  nash_balance_stategy,
+  lastNOpponentsMoves
 }

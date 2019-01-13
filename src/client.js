@@ -87,6 +87,7 @@ class Client {
             if (data.state === 'gameover') {
                 this.games[data.game].scores = data.scores;
                 this.saveGame(data.game);
+                console.log(`game ${data.game}, scores: ${data.scores}, hand: ${this.games[data.game].hand}}`);
                 delete this.games[data.game];
             }
         });

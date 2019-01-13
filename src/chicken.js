@@ -34,6 +34,7 @@ const msgHandler = msg => {
         // logger.log(`Game ${message.game} started. Hand: ${message.hand}. Payoff: ${JSON.stringify(message.parameters.payoff)}`, true);
         games[message.game] = message;
         games[message.game].movesHistory = [];
+        games[message.game].aggressiveMovesCount = 0;
         client.send({game: message.game, state: "move", strategy: 0});
     }
 
@@ -59,7 +60,9 @@ const msgHandler = msg => {
             game.moves = 1;
         }
 
-        if (game.moves * (balance - balance**2) < 0.8) {
+        
+
+        if (game.moves * (balance - balance**2) < 0.4) {
             game.moves++;
             return client.send({game:message.game, state:'move', strategy: 1});
         }
@@ -93,6 +96,11 @@ Scores: ${JSON.stringify(message.scores)}
 
     function addMove(message) {
         games[message.game].movesHistory.push(message.moves);
+        
+        if (moves[i][(hand + 1) % 2] === 1) {
+
+        }
+        
         const moves = games[message.game].movesHistory;
         const hand = games[message.game].hand;
 
