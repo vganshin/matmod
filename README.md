@@ -1,4 +1,10 @@
+# How to run strategies
 
+```
+node src/index.js gameName [release]
+```
+
+Allowed game names: prisoner, chicken, goods.
 
 # How to run visualizer
 
