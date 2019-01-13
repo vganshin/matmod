@@ -1,6 +1,7 @@
 const WebSocketClient = require('websocket').client;
 const constants = require('./constants');
 const LoggerUtil = require('./logger').Logger;
+const fs = require('fs');
 
 class Client {
     // constructor(login, password, debug, url, strategyFn, logger) {
@@ -19,7 +20,7 @@ class Client {
         this.url = gameInfo.url;
         this.strategyFn = strategyFn;
 
-        this.logger = new LoggerUtil(`logs/${gameName}/${new Date()}.txt`);;
+        this.logger = new LoggerUtil(`logs/${gameName}/${new Date().getTime()}.txt`);;
 
         this.client = new WebSocketClient();
 
