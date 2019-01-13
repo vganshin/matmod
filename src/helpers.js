@@ -40,6 +40,10 @@ function myHand(game) {
   return game.hand;
 }
 
+function moveCount(game) {
+  return game.moves.length + 1;
+}
+
 function lastOpponentsMove(game) {
   if (game.moves.length === 0) {
     return undefined;
@@ -52,5 +56,6 @@ module.exports = {
   isOpponentAntiMirror,
   opHand,
   myHand,
-  lastOpponentsMove
+  lastOpponentsMove,
+  moveCount
 }
