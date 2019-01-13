@@ -68,6 +68,7 @@ class Client {
             }
 
             if (data.state === 'start') {
+                console.log(`Started game ${data.game}. Term prob: ${data.parameters.termination_probability}`);
                 this.games[data.game] = data;
                 data.moves = [];
 
@@ -90,6 +91,7 @@ class Client {
             }
 
             if (data.state === 'gameover') {
+                console.log(`End game ${data.game}. Count turns: ${this.games[data.game].moves.length + 1}`);
                 this.games[data.game].scores = data.scores;
                 this.saveGame(data.game);
                 delete this.games[data.game];
