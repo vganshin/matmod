@@ -40,12 +40,14 @@
       }, [])
       .map((n, i) => n / (i + 1));
 
-    const text = game.moves.map(moves => moves[hand]);
+    const text = game.moves.map(moves => moves[hand] === 1 ? 'aggressive' : 'chicken');
 
     y.push(game.scores[hand]);
     text.push('?');
 
-    return {name, y, text};
+    const x = [...game.moves.keys()].map(n => n + 1);
+
+    return {name, x, y, text};
   }
 
   function my_score(game) {
@@ -54,6 +56,14 @@
 
   function op_score(game) {
     return score_by_hand(game, (game.hand + 1) % 2, 'enemy');
+  }
+
+  function chicken_score(game) {
+    const name = 'chicken!';
+    const x = [...game.moves.keys()].map(n => n + 1);
+    const y = Array(game.moves.length).fill(game.parameters.payoff[1][0][1])
+
+    return {name, x, y};
   }
 
   var context = {
@@ -105,7 +115,7 @@
       .then(res => res.json())
       .then(data => {
         console.log(data);
-        Plotly.newPlot('plot', [my_score(data), op_score(data)], {title: `Игра №${game_id}`})
+        Plotly.newPlot('plot', [my_score(data), op_score(data), chicken_score(data)], {title: `Игра №${game_id}`})
       });
   }
 
