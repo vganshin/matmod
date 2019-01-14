@@ -66,6 +66,14 @@
     return {name, x, y};
   }
 
+  function aggressive_score(game) {
+    const name = 'aggressive!';
+    const x = [...game.moves.keys()].map(n => n + 1);
+    const y = Array(game.moves.length).fill(game.parameters.payoff[1][1][1])
+
+    return {name, x, y};
+  }
+
   var context = {
     game_ids: []
   }
