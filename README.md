@@ -1,5 +1,7 @@
 # How to run strategies
 
+> Warn: for chicken game only.
+
 ```
 node src/index.js gameName [release]
 ```
@@ -14,3 +16,11 @@ node src/server.js
 ```
 
 and go to http://localhost:8080.
+
+# How to run shower
+
+> Warn: for chicken game only.
+
+```
+node src/shower.js
+```

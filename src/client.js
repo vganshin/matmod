@@ -125,7 +125,7 @@ class Client {
             throw new Error(`Game with id = ${gameId} not found.`);
         }
 
-        fs.writeFileSync(`games/${this.gameName}/${gameId}.json`, JSON.stringify(game, 2, 2));
+        fs.writeFileSync(`games/${this.gameName}/${gameId}.json`, JSON.stringify(game));
     }
 
     screen() {
