@@ -59,6 +59,7 @@ class Client {
             const data = JSON.parse(message.utf8Data);
 
             if (data.state === 'info') {
+                console.log('Server version ' + data.version);
                 this.loginToServer();
                 return;
             }
