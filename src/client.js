@@ -99,7 +99,7 @@ class Client {
             if (data.state === 'gameover') {
                 this.games[data.game].scores = data.scores;
                 this.saveGame(data.game);
-                delete this.games[data.game];
+                setTimeout(() => { delete this.games[data.game]; }, 20000);
             }
         });
     }
@@ -156,7 +156,9 @@ class Client {
 
                 const a = Math.abs(game.parameters.payoff[1][0][1]);
                 const b = Math.abs(game.parameters.payoff[1][1][1]);
-                console.log(`${game_id}\t${game.moves.length}\t${game.parameters.termination_probability}\t${myScore}\t${opScore}\t${a}\t${b}\t${b / a}`);
+                const ended = game.scores !== undefined ? '×' : '';
+
+                console.log(`${game_id}\t${game.moves.length}\t${game.parameters.termination_probability}\t${myScore}\t${opScore}\t${a}\t${b}\t${b / a}\t${ended}`);
             });
         };
         this.interval = setInterval(screen, 1000);
